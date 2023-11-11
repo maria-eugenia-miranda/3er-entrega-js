@@ -4,7 +4,7 @@ let carrito = [];
 let subTotal = 0;
 let total = 0;
 
-const productos = [
+let productos = [
     {
         nombreProducto: 'Buzo térmico',
         precioProducto: 7900,
@@ -38,10 +38,10 @@ const agregarAlCarrito = (producto) => {
     listarCarrito();
 }
 
-const listarProductos = () => {
+const listarProductos = (nuevosProductos) => {
     const listaProductos = document.getElementById("productos");
 
-    productos.forEach(producto => {
+    nuevosProductos.forEach(producto => {
         // Creo el div cartaProducto
         const cartaProducto = document.createElement('div');
         cartaProducto.classList.add('cartaProducto');
@@ -92,7 +92,7 @@ const listarCarrito = () => {
         eliminar.textContent = "X";
         eliminar.clasName = "eliminarProdcuto";
 
-        
+
         eliminar.onclick = () => eliminarItemCarrito(key);
         itemCarrito.appendChild(eliminar);
 
@@ -104,12 +104,24 @@ const listarCarrito = () => {
 
 
 function eliminarItemCarrito(key) {
-   
-    carrito = carrito.filter((producto, pos) => {
-    
-        return key !== pos;
-    });
-    listarCarrito();
+
+    Swal.fire({
+        title: 'Estás seguro que deseas eliminar este producto del carrito',
+        showDenyButton: true,
+        confirmButtonText: 'Si',
+        denyButtonText: 'No',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            carrito = carrito.filter((producto, pos) => {
+                return key !== pos;
+            });
+            guardarCarrito();
+            listarCarrito();
+            Swal.fire('Borrado', '', 'success')
+        }
+    })
+
+
 
 }
 
@@ -135,8 +147,26 @@ const vaciarCarrito = () => {
     listarCarrito();
 }
 
-const init = () => {
-    listarProductos();
+const obtenerProductos = async (query) => {
+    const request = await fetch("https://api.mercadolibre.com/sites/MLA/search?q=" + query, {
+        method: "GET",
+    });
+
+    const response = request.json();
+    return response;
+}
+
+const init = async () => {
+    productos = await obtenerProductos('ropa deportiva');
+    productos = await productos.results.map(producto => {
+        return {
+            nombreProducto: producto.title,
+            precioProducto: producto.price,
+            imgProducto: producto.thumbnail
+        }
+    })
+
+    listarProductos(productos);
     const lsCarrito = localStorage.getItem("carrito");
     if (lsCarrito) {
         carrito = JSON.parse(lsCarrito);
